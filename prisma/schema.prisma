@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String  @id
+  email              String  @unique
+  name               String  @default("Пользователь")
+  city               String  @default("Москва")
+  avatarUrl          String  @default("")
+  role               String  @default("user")
+  isVerified         Boolean @default(false)
+  verificationStatus String  @default("none")
+
+  listings             Listing[]
+  purchases            Deal[]                @relation("BuyerDeals")
+  sales                Deal[]                @relation("SellerDeals")
+  reviewsGiven         Review[]              @relation("ReviewsGiven")
+  reviewsReceived      Review[]              @relation("ReviewsReceived")
+  verificationRequests VerificationRequest[]
+  reports              Report[]
+
+  conversationsAsBuyer  Conversation[] @relation("BuyerConversations")
+  conversationsAsSeller Conversation[] @relation("SellerConversations")
+  messages              Message[]
+  favorites             Favorite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Listing {
+  id              String @id @default(cuid())
+  title           String
+  price           Int
+  city            String @default("Москва")
+  location        String
+  district        String
+  address         String @default("")
+  category        String
+  condition       String @default("Б/у")
+  dealMethod      String @default("Встреча")
+  badge           String
+  status          String @default("moderation")
+  rejectionReason String @default("")
+
+  sellerId   String?
+  seller     User?   @relation(fields: [sellerId], references: [id])
+  sellerName String
+
+  published   DateTime @default(now())
+  image       String
+  images      String[]
+  description String
+
+  views     Int @default(0)
+  messages  Int @default(0)
+  favorites Int @default(0)
+
+  deals         Deal[]
+  reviews       Review[]
+  reports       Report[]
+  conversations Conversation[]
+  favoriteItems Favorite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Deal {
+  id String @id @default(cuid())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  buyerId String
+  buyer   User   @relation("BuyerDeals", fields: [buyerId], references: [id])
+
+  sellerId String
+  seller   User   @relation("SellerDeals", fields: [sellerId], references: [id])
+
+  amount Int
+  status String @default("pending")
+
+  buyerConfirmed  Boolean @default(false)
+  sellerConfirmed Boolean @default(false)
+
+  reviews Review[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  dealId String?
+  deal   Deal?   @relation(fields: [dealId], references: [id])
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id])
+
+  reviewerId String
+  reviewer   User   @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+
+  receiverId String
+  receiver   User   @relation("ReviewsReceived", fields: [receiverId], references: [id])
+
+  rating Int
+  text   String @default("")
+
+  createdAt DateTime @default(now())
+}
+
+model VerificationRequest {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  status    String   @default("pending")
+  text      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Report {
+  id String @id @default(cuid())
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  reason String
+  text   String @default("")
+  status String @default("new")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id String @id @default(cuid())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  buyerId String
+  buyer   User   @relation("BuyerConversations", fields: [buyerId], references: [id])
+
+  sellerId String
+  seller   User   @relation("SellerConversations", fields: [sellerId], references: [id])
+
+  status        String   @default("open")
+  lastMessageAt DateTime @default(now())
+
+  buyerUnreadCount  Int @default(0)
+  sellerUnreadCount Int @default(0)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listingId, buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([listingId])
+}
+
+model Message {
+  id String @id @default(cuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  text String
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Favorite {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([listingId])
+}

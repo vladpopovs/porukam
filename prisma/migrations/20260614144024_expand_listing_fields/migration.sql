@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Listing" ADD COLUMN     "address" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "condition" TEXT NOT NULL DEFAULT 'Б/у',
+ADD COLUMN     "dealMethod" TEXT NOT NULL DEFAULT 'Встреча',
+ADD COLUMN     "favorites" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "messages" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "views" INTEGER NOT NULL DEFAULT 0;
